@@ -40,49 +40,52 @@ each new market date for each customer, or select only the unique market dates p
 (without purchase details) and number those visits. 
 HINT: One of these approaches uses ROW_NUMBER() and one uses DENSE_RANK(). */
 
---first select customer id and market date columns, then resets numbering for each customer, sort visits chronologically and lastly use the row_number() to assigns each visits.
-
+--new version. I use dense rank this time and number each customer's visit dates in chronological order. dense rank gives the same visit number to identical dates for each customer.
 SELECT
     customer_id,
     market_date,
-    ROW_NUMBER() OVER (
+    DENSE_RANK() OVER (
         PARTITION BY customer_id
         ORDER BY market_date
     ) AS visit_number
 FROM customer_purchases;
+
 
 /* 2. Reverse the numbering of the query from a part so each customer’s most recent visit is labeled 1, 
 then write another query that uses this one as a subquery (or temp table) and filters the results to 
 only the customer’s most recent visit. */
 
 --i added order by market_date desc to sort from most recent date to the oldest.
+--new version. the old one did not include SELECT in the first line
 SELECT
     customer_id,
     market_date,
-    ROW_NUMBER() OVER (
+    DENSE_RANK() OVER (
         PARTITION BY customer_id
         ORDER BY market_date DESC
-    ) AS recent_visit_number
+    ) AS visit_number
 FROM customer_purchases;
 
 --building from the previous code, this query orders visits from the most recent using the where clause to perform the filtering so that only the most recent vistis is returned.
+SELECT    
     customer_id,
     market_date,
-    recent_visit_number
+    visit_number
 FROM (
     SELECT
         customer_id,
         market_date,
-        ROW_NUMBER() OVER (
+        DENSE_RANK() OVER (
             PARTITION BY customer_id
             ORDER BY market_date DESC
-        ) AS recent_visit_number
+        ) AS visit_number
     FROM (
         SELECT DISTINCT customer_id, market_date
         FROM customer_purchases
     )
 ) AS lastest_visit
-WHERE recent_visit_number = 1;
+WHERE visit_number = 1;
+
 
 /* 3. Using a COUNT() window function, include a value along with each row of the 
 customer_purchases table that indicates how many different times that customer has purchased that product_id. */
